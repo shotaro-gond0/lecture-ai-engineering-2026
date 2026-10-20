@@ -4,12 +4,29 @@ APIキーやモデル名はコードに書かず、環境変数から読み込�
 """
 
 import os
+import math
 
 # 既定モデル。環境変数 AIE_MODEL を設定すると切り替えられる。
 #   例: export AIE_MODEL=gemini-3.5-flash
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 MODEL = os.getenv("AIE_MODEL", DEFAULT_MODEL)
-
+def parse_temperature(name: str) -> float | None:
+    """環境変数に有効なtemperature値がセットされていればfloatに変換"""
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    try:
+        value = float(raw)
+    except ValueError:
+        return None
+    # "nan" や "inf" も float() は受け付けるため、有限数かを確認する
+    if not math.isfinite(value):
+        return None
+    if 0.0 <= value <= 2.0:
+        return value
+    else:
+        return None
+MODEL_TEMPERATURE = parse_temperature("AIE_TEMPERATURE")
 
 def api_error_message(status: int, detail: str = "") -> str:
     """HTTPステータスコードを、受講生向けの日本語の説明にする（ask.py と agent.py で共用）。"""

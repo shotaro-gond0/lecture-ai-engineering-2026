@@ -15,15 +15,25 @@ import argparse
 from google import genai
 from google.genai import errors
 
-from app.config import MODEL, api_error_message, get_api_key
+from app.config import MODEL, MODEL_TEMPERATURE, api_error_message, get_api_key
 
 # 講座に固有の質問。正しい答えは data/glossary.json の homework-levels にある
 DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何ですか？"
 
 
 def ask(question: str) -> str | None:
+    
+    name = MODEL if MODEL.startswith("models/") else f"models/{MODEL}"
+    
     client = genai.Client(api_key=get_api_key())
-    response = client.models.generate_content(model=MODEL, contents=question)
+        
+    model = client.models.get(model=name)
+    temperature = model.temperature if MODEL_TEMPERATURE == None else MODEL_TEMPERATURE
+    
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=question,
+        config={"temperature": temperature})
 
     # TODO(第1回 演習): response.usage_metadata から
     #   入力トークン数と出力トークン数を表示してみよう（Copilotに頼んでよい）
@@ -35,14 +45,30 @@ def ask(question: str) -> str | None:
     return response.text
 
 
+def list_models() -> None:
+    client = genai.Client(api_key=get_api_key())
+    # print("利用可能なモデル:")
+    for model in client.models.list():
+        print(f"{model.name}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="素のLLMに質問する")
     parser.add_argument("question", nargs="?", default=DEFAULT_QUESTION)
+    parser.add_argument(
+        "--list-models",
+        action="store_true",
+        help="利用可能なモデル名を表示する",
+    )
     args = parser.parse_args()
 
-    print(f"[model] {MODEL}")
-    print(f"[質問] {args.question}\n")
     try:
+        if args.list_models:
+            list_models()
+            return
+
+        print(f"[model] {MODEL}")
+        print(f"[質問] {args.question}\n")
         print(ask(args.question))
     except errors.APIError as e:
         print(api_error_message(e.code, e.message))

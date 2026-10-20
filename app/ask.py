@@ -21,7 +21,7 @@ from app.config import MODEL, MODEL_TEMPERATURE, api_error_message, get_api_key
 DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何ですか？"
 
 
-def ask(question: str) -> str | None:
+def ask(context: str) -> str | None:
     
     name = MODEL if MODEL.startswith("models/") else f"models/{MODEL}"
     
@@ -32,7 +32,7 @@ def ask(question: str) -> str | None:
     
     response = client.models.generate_content(
         model=MODEL,
-        contents=question,
+        contents=context,
         config={"temperature": temperature})
 
     # TODO(第1回 演習): response.usage_metadata から

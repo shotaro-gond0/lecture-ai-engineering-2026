@@ -21,15 +21,15 @@ from app.config import MODEL, MODEL_TEMPERATURE, api_error_message, get_api_key
 DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何ですか？"
 
 
-def ask(context: str) -> str | None:
-    
+def ask(context: str) -> str:
+
     name = MODEL if MODEL.startswith("models/") else f"models/{MODEL}"
-    
+
     client = genai.Client(api_key=get_api_key())
-        
+
     model = client.models.get(model=name)
     temperature = model.temperature if MODEL_TEMPERATURE == None else MODEL_TEMPERATURE
-    
+
     response = client.models.generate_content(
         model=MODEL,
         contents=context,
@@ -42,7 +42,14 @@ def ask(context: str) -> str | None:
         print(f"[usage] 入力トークン数: {usage.prompt_token_count}")
         print(f"[usage] 出力トークン数: {usage.candidates_token_count}")
 
-    return response.text
+    if response.text is None:
+        print(
+            f"Warning: {MODEL} did not return valid response text for the context: \n{context}")
+        answer = ""
+    else:
+        answer = response.text
+
+    return answer
 
 
 def list_models() -> None:
@@ -53,6 +60,7 @@ def list_models() -> None:
 
 
 def main() -> None:
+
     parser = argparse.ArgumentParser(description="素のLLMに質問する")
     parser.add_argument("question", nargs="?", default=DEFAULT_QUESTION)
     parser.add_argument(
@@ -61,15 +69,27 @@ def main() -> None:
         help="利用可能なモデル名を表示する",
     )
     args = parser.parse_args()
+    context = ""
 
     try:
         if args.list_models:
             list_models()
             return
 
-        print(f"[model] {MODEL}")
-        print(f"[質問] {args.question}\n")
-        print(ask(args.question))
+        print(f"[model]: {MODEL}")
+        query = args.question
+        while query not in ("quit", "exit"):
+            context += f"[User]:\n{query}\n"
+            answer = ask(context)
+            answer = "[System]:\n" + answer + \
+                "\n" if not answer.startswith("[System]") else answer + "\n"
+            context += answer
+            print(answer)
+            query = input("[User]:\n").strip()
+
+        print("終了します。")
+    except (KeyboardInterrupt, EOFError):
+        print("\n終了します。")
     except errors.APIError as e:
         print(api_error_message(e.code, e.message))
         raise SystemExit(1)

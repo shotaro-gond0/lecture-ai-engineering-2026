@@ -26,7 +26,6 @@ DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何�
 def ask(context: str) -> str:
 
     name = MODEL if MODEL.startswith("models/") else f"models/{MODEL}"
-    input_context = context
     client = genai.Client(api_key=get_api_key())
 
     model = client.models.get(model=name)
@@ -34,7 +33,7 @@ def ask(context: str) -> str:
 
     response = client.models.generate_content(
         model=MODEL,
-        contents=input_context,
+        contents=context,
         config={"temperature": temperature})
 
     # TODO(第1回 演習): response.usage_metadata から
@@ -86,7 +85,7 @@ def compaction(context: str) -> str:
 
         response = client.models.generate_content(
             model=MODEL,
-            contents=f"以下の内容を要約し、3分の1程度の長さにしてください。短くした要約内容のみを出力し、それ以外は一切内容を追加してはいけません。¥n {input_context}",
+            contents=f"以下の内容を要約し、3分の1程度の長さにしてください。短くした要約内容のみを出力し、それ以外は一切内容を追加してはいけません。\n\n {input_context}",
             config={"temperature": 0.0})
 
         usage = response.usage_metadata

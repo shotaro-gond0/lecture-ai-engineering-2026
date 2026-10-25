@@ -4,7 +4,7 @@
 # uv run python -m app.ask --list-models の出力から、
 # gemini-X.Y-flash-lite 形式のモデル名を抽出し、
 # モデル (AIE_MODEL) × temperature (AIE_TEMPERATURE) の全組み合わせで
-# uv run python -m app.ask を実行します。
+# uv run python -m app.ask --non-interactive を実行します。
 
 set -uo pipefail
 
@@ -28,7 +28,7 @@ for model in "${models[@]}"; do
     echo "[${count}/${total}] AIE_MODEL=${model} AIE_TEMPERATURE=${temp}"
 
     if ! AIE_MODEL="$model" AIE_TEMPERATURE="$temp" \
-         uv run python -m app.ask </dev/null; then
+         uv run python -m app.ask --non-interactive </dev/null; then
       echo "  -> 失敗: AIE_MODEL=${model} AIE_TEMPERATURE=${temp}" >&2
       failed=$(( failed + 1 ))
     fi

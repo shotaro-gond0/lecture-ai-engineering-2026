@@ -122,6 +122,11 @@ def main() -> None:
         action="store_true",
         help="利用可能なモデル名を表示する",
     )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="質問に1回回答したら終了する",
+    )
     args = parser.parse_args()
     context = ""
 
@@ -144,6 +149,8 @@ def main() -> None:
                         "[System]") else answer + "\n"
                 context += answer
                 print(answer)
+            if args.non_interactive:
+                break
             query = input("[User]:\n").strip()
 
         print("終了します。")

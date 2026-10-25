@@ -157,7 +157,7 @@ def main() -> None:
     except (KeyboardInterrupt, EOFError):
         print("\n終了します。")
     except errors.APIError as e:
-        print(api_error_message(e.code, e.message))
+        print(api_error_message(e.code, e.message)) # pyright: ignore[reportArgumentType]
         raise SystemExit(1)
 
 

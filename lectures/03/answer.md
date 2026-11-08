@@ -236,8 +236,24 @@
 
 - 取り組んだレベル：実装
 - やったこと：
+  - app/agent.py を変更し、第一回で行ったように会話履歴を認識するAIが入力プロンプトループでユーザーと会話を続けられるようにした。（"quit" または "exit" で終了）
+    -「学習」を保存する機能を実装せよという課題だが、「学習」とは何のことか指定されておらず、そのままでは保存する対象がない。「学習を支援するAI Agent」に関して「学習」とよべる保存対象として会話履歴を存在させるため、この変更が必要と考えた。
+    - 今回は第一回とちがって pydantic_ai によるエージェントの実装なので、このパッケージの機能である pydantic_ai.Agent.run_sync().all_messages() を用いて履歴管理を実装した。
+  - app/tools.py に save_learning_log() 関数を実装した。
+    - str型のテキストでチャット履歴（＝「学習」履歴）を受け取る仕様とした。
+    - str型のオプション第二引数で保存パスを指定できる仕様とし、デフォルト引数を app/config.py で環境変数またはデフォルト固定値で LEARNING_LOG_FOLDER グローバル変数から得る実装とし、 app/config.py でデフォルト値 "/workspaces/lecture-ai-engineering-2026/learning_log/" を設定してレポジトリに保存できるようにした。ファイル名は daytime による秒までの文字列に拡張子 .log を付けて繰り返し実行でもファイル名が重複しないようにした。
+    - Docstring に引数の仕様も明記し、引数の変数名を message_history とすることでLLMが使い方を正しく判断できるようにした。このようにすることで、gemini-3.5-flash-lite は、要約したチャット履歴をツールとしてこの関数を呼び出すとき、引数に要約した会話履歴を渡す動作をした。
+  - pydantic_ai.Agent の run_sync() が str だけでなく DeferredToolRequests を返すこともできるように指定した。
+  - INSTRUCTION に save_learning_log をツールとして呼び出すべき状況を明記した。
+  - requires_approval=True でツールとして登録した。
+  - main() の入力プロンプトループ内で、run_sync() が返した result の result.output が DeferredToolRequests であった場合に Human-in-the-Loop のための入れ子の入力プロンプトループを追加し、ユーザーが許可した場合のみ実際に save_learning_log() を実行するようにした。さらに、その後で run_sync() を再度実行して保存がユーザーに許可されてもされなくても会話が続くようにした。
 - 結果：
+  - pytest は 22 のテストにすべて合格した。
+  - 演習で実装した make_quiz による問題の出題、それに対してユーザーが自然言語で回答した場合の添削コメントも含め、自然にでインタラクティブな会話ができるようになった。
+  - 「ここまでの履歴を保存」「ここまでの学習を記録してください」といったユーザークエリで Human-in-the-Loop のプロンプトを表示し、 y を回答したときのみ会話履歴をテキストファイルとして保存し、N を回答したときには何もせず会話を続けるようになった。
 - 気づき・疑問：
+  - pydantic_ai は Agent の入出力の型の指定とツール呼び出しの制御を実装するための仕組みが非常に優れていて非常に便利だ。
+  - pydantic_ai の公式サイトやWeb検索では大抵、関数でツール定義は @agent.tool , @agent.tool_plain などのデコレータによるラッパーを定義しており、この演習・宿題のベースラインコードのように agent.tool_plain(tools.save_learning_log, requires_approval=True) などとやっているものは見当たらかったため、 Claude.ai に書いてもらうまでこの形式での requires_approval=True 指定方法がわからなかった。実務では @デコレータを使うほうが間違えにくく読みやすいと考えられる。
 
 - 取り組んだレベル：発展
 - やったこと：

@@ -10,6 +10,10 @@ from pathlib import Path
 
 import random
 
+from datetime import datetime
+
+from app.config import LEARNING_LOG_FOLDER
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MAX_RESULTS = 3
 
@@ -80,6 +84,7 @@ def get_lecture_summary(lecture: int) -> str:
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
 
+
 def make_quiz(lecture: int) -> str:
     """指定した回の用語から1問を選び、確認問題と答えを返す。
 
@@ -97,4 +102,23 @@ def make_quiz(lecture: int) -> str:
         },
         ensure_ascii=False,
     )
+
+
+def save_learning_log(
+    message_history: str,
+    dir_path: str = LEARNING_LOG_FOLDER,
+) -> Path:
+    """チャット履歴を message_history 引数として受け取り、 
+    dir_path 引数で与えられたパスのフォルダに、
+    日付のファイル名で保存する。
+
+    「これまでの学習内容を保存してください」「これまでのチャット履歴を保存してください」など、会話履歴の保存を求められたときに使用する。
+    """
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder = Path(dir_path)
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{timestamp}.log"
     
+    path.write_text(message_history, encoding="utf-8")
+    return path

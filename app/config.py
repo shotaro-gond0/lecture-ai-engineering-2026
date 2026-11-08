@@ -10,6 +10,8 @@ import math
 #   例: export AIE_MODEL=gemini-3.5-flash
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 MODEL = os.getenv("AIE_MODEL", DEFAULT_MODEL)
+LEARNING_LOG_FOLDER = os.getenv("LEARNING_LOG_FOLDER", "/workspaces/lecture-ai-engineering-2026/learning_log/")
+
 def parse_temperature(name: str) -> float | None:
     """環境変数に有効なtemperature値がセットされていればfloatに変換"""
     raw = os.getenv(name)

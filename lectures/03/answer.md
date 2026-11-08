@@ -257,5 +257,14 @@
 
 - 取り組んだレベル：発展
 - やったこと：
+  - uv add google-adk で uv.lock に googl-adk を追加した。
+  - 課題の指示に沿って、以下を実施した。
+    - レポジトリに adk_agent/glossary_agent ディレクトリを追加
+    - __init__.py と agent.py を作成（ツール: search_glossary, get_lecture_summary, make_quiz）
+    - PYTHONPATH=. uv run --with google-adk adk run adk_agent/glossary_agent を実行
 - 結果：
+  - チャット履歴を参照する形で対話的にLLMと会話することができ、LLMは適切にツールを適用して動作した。
 - 気づき・疑問：
+  - Google ADK は、以下の特徴により、簡易なAgentの試作などの容易さにおいて優れている。
+    - 課題の指示の手順では Python プログラム中に対話のためのインプット・アウトプットループを実装しなくともLinuxのインタラクティブシェルをそのまま活用して対話的に利用することができる
+    - 関数を @ デコレータによるラッピングなしに Agent オブジェクトのコンストラクタに直接引数渡しでツール登録できる

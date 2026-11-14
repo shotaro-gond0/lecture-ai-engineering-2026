@@ -35,7 +35,8 @@ def api_error_message(status: int, detail: str = "") -> str:
     if status == 429:
         return "レート制限に達しました。1分ほど待ってから再実行してください。"
     if status == 503:
-        return "モデルが混み合っています（503）。少し待ってから再実行してください。"
+        message = "モデル API が一時エラー（503）を返しました。少し待ってから再実行してください。"
+        return f"{message} 詳細: {detail}" if detail else message
     if status in (400, 401, 403, 404):
         return f"APIキーかモデル名に問題があります（{status}）: {detail}"
     return f"APIエラー（{status}）: {detail}"

@@ -22,7 +22,10 @@
     "vscode": {
       "extensions": ["ms-python.python", "GitHub.copilot-chat"],
       "settings": {
-        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python"
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "[markdown]": {
+          "editor.tabSize": 2
+        }
       }
     }
   }

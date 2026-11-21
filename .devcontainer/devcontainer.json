@@ -15,9 +15,18 @@
     "GEMINI_API_KEY": {
       "description": "Google AI Studio で発行した Gemini API キー",
       "documentationUrl": "https://aistudio.google.com/apikey"
+    },
+    // Claude Code のスキル・メモリ同期用（任意。未設定なら同期をスキップ）
+    "CLAUDE_DATA_REPO": {
+      "description": "（任意）スキル・メモリ保存用 private リポジトリ。owner/repo 形式"
+    },
+    "CLAUDE_DATA_TOKEN": {
+      "description": "（任意）上記リポジトリ限定の fine-grained PAT（Contents: Read and write）"
     }
   },
   "postCreateCommand": "bash .devcontainer/persist-claude.sh && pipx install uv && uv sync --frozen",
+  // 起動のたびに private リポジトリから pull してリンクする
+  "postStartCommand": "bash .devcontainer/claude-data.sh setup",
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python", "GitHub.copilot-chat", "anthropic.claude-code"],

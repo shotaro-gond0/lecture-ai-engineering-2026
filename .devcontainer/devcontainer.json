@@ -17,10 +17,10 @@
       "documentationUrl": "https://aistudio.google.com/apikey"
     }
   },
-  "postCreateCommand": "pipx install uv && uv sync --frozen",
+  "postCreateCommand": "bash .devcontainer/persist-claude.sh && pipx install uv && uv sync --frozen",
   "customizations": {
     "vscode": {
-      "extensions": ["ms-python.python", "GitHub.copilot-chat"],
+      "extensions": ["ms-python.python", "GitHub.copilot-chat", "anthropic.claude-code"],
       "settings": {
         "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
         "[markdown]": {

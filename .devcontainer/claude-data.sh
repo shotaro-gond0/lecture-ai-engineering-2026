@@ -31,11 +31,16 @@ g() {
       -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" "$@"
 }
 
-# 対象プロジェクトのディレクトリを決める（引数 > フックの環境変数 > Codespaces > git のルート）
+# 対象プロジェクトのディレクトリを決める
+# （引数 > フックの環境変数 > Codespaces の環境変数 > git のルート）
+# dotfiles の実行時は、カレントが dotfiles 自身になるため、GITHUB_REPOSITORY から /workspaces/<repo> を引く。
+# Codespaces の内部ディレクトリ（/workspaces/.codespaces/...）は、プロジェクトとして扱わない。
 resolve_project_dir() {
   local c
   for c in "$PROJECT_ARG" "${CLAUDE_PROJECT_DIR:-}" "${CODESPACE_VSCODE_FOLDER:-}" \
+           "${GITHUB_REPOSITORY:+/workspaces/${GITHUB_REPOSITORY#*/}}" \
            "$(git rev-parse --show-toplevel 2>/dev/null || true)"; do
+    case "$c" in */.codespaces/*) continue ;; esac
     if [ -n "$c" ] && [ -d "$c" ]; then
       (cd "$c" && pwd)
       return 0

@@ -193,3 +193,47 @@ def search_graph(query: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
     except APIError as e:
         return json.dumps({"error": api_error_message(e.code)}, ensure_ascii=False)
+
+
+def _glossary_in_query_and_pages(query: str, result: dict, limit: int = 5) -> list[dict]:
+    """質問文と、検索で得たページ本文の両方に含まれる用語を、用語集から集める。"""
+    q = _normalize(query)
+    text = _normalize("".join(
+        f"{p.get('title', '')}{p.get('content', '')}"
+        for p in result.get("seeds", []) + result.get("expanded", [])
+    ))
+    out = []
+    for e in load_glossary():
+        # 「r」のような短い名前が何にでも当たらないよう、2文字未満は除く
+        if any(len(n) >= 2 and n in q and n in text for n in _names(e)):
+            out.append({"term": e["term"], "lecture": e["lecture"], "definition": e["definition"]})
+    return out[:limit]
+
+
+def search_graph_with_glossary(query: str) -> str:
+    """資料を2段階で検索し、関連ページの本文と、関連用語の定義を返す。
+
+    queryに調べたい内容（質問文）を指定する。
+    1段目: 質問文でグラフ検索し、得たページ本文と質問文の両方に含まれる用語を用語集で調べる（glossary）。
+    2段目: 質問文と glossary の用語・定義を合わせた文（search_query）で、もう一度グラフ検索する。
+    共通する用語がなければ、1段目の結果をそのまま返す。
+    seeds は検索で直接ヒットしたページ、expanded はグラフをたどって加えた関連ページ（path が経由した用語やページ）。
+    expanded は検索で選ばれたページではないので、本文で質問に関係するか確認してから根拠にする。
+    """
+    import sqlite3
+    from google.genai.errors import APIError
+    from app.retrieval import search_graph as search
+
+    try:
+        result = search(query)
+        glossary = _glossary_in_query_and_pages(query, result)
+        if glossary:
+            search_query = query + "\n" + "\n".join(f"{g['term']}: {g['definition'][:100]}" for g in glossary)
+            result = search(search_query)
+            result["search_query"] = search_query
+        result["glossary"] = glossary
+        return json.dumps(result, ensure_ascii=False)
+    except (ValueError, OSError, sqlite3.Error) as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+    except APIError as e:
+        return json.dumps({"error": api_error_message(e.code)}, ensure_ascii=False)

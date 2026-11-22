@@ -140,6 +140,31 @@ def search_materials(query: str) -> str:
         return json.dumps({"error": api_error_message(e.code), "results": []}, ensure_ascii=False)
 
 
+def search_materials_with_context(query: str) -> str:
+    """第1〜3回の本講義資料を検索し、ヒットしたページとその前後ページを本文付きで返す。
+
+    説明が複数ページにまたがる内容（手順・比較・前提と結論など）を調べるときに使う。
+    queryに調べたい内容を指定する。
+
+    各結果の role は次の意味を持つ。
+    - "hit": 検索で質問に近いと判定されたページ（distance を持つ）
+    - "neighbor": hit の前後にある文脈補足のページ（distance は null、neighbor_of が対応する hit の page_id）
+    結果は講義資料の並び順で返す。neighbor は検索で選ばれたページではないので、
+    質問に直接関係する内容かどうかは本文で確認してから根拠にする。
+    """
+    from google.genai.errors import APIError
+    import sqlite3
+    from app.retrieval import search_with_context
+
+    try:
+        return json.dumps({"results": search_with_context(query)}, ensure_ascii=False)
+    except (ValueError, FileNotFoundError, sqlite3.Error) as e:
+        return json.dumps({"error": str(e), "results": []}, ensure_ascii=False)
+    except APIError as e:
+        return json.dumps({"error": api_error_message(e.code), "results": []}, ensure_ascii=False)
+
+
+
 def browse_tree(node_id: str | None = None) -> str:
     """目次とページの先頭文を返す。ページIDを指定すると全文を返す。
 

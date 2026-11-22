@@ -3,33 +3,30 @@
 # --trace の [time] / [usage] / [cost] 行を抜き出して Markdown の表にまとめる。
 #
 # 使い方（リポジトリ内のどこからでも可）:
-#   bash lectures/05/benchmark_agent.sh                 # カレントディレクトリに出力
+#   bash lectures/05/benchmark_agent.sh                 # lectures/05/benchmark_logs/<日時>/ に出力
 #   bash lectures/05/benchmark_agent.sh -d out/         # out/ に出力（なければ作成）
 #
-# 出力（-d で指定したディレクトリ。未指定ならカレントディレクトリ）:
+# 出力先は生ログと同じディレクトリ（既定: lectures/05/benchmark_logs/<日時>/、-d で変更）:
+#   q<N>_*.log         : 各実行の生ログ
 #   benchmark_agent.md : 全コマンド × 全プロンプトの結果表（標準出力にも表示）
-#   q1.md              : 1 つめの質問の方式別比較表（方式／回答の要点／引用ページ／時間／トークン／応答回数／費用）
+#   q1.md              : 1 つめの質問の方式別比較表
+#   traces.md / hit_and_left.md / differences.md : make_reports.py が生ログから作る整理表
 #
 # 実行するコマンドは COMMAND_LIST（uv run python -m の後ろ）、プロンプトは PROMPTS で編集する。
-#
-# 各実行の生ログは LOG_DIR（既定: lectures/05/benchmark_logs/<日時>/）に保存する。
 
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-OUT_DIR="."
+LOG_DIR="${LOG_DIR:-}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -d|--dir) OUT_DIR="$2"; shift 2 ;;
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -d|--dir) LOG_DIR="$2"; shift 2 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
-
-mkdir -p "$OUT_DIR" || exit 1
-OUT_DIR="$(cd "$OUT_DIR" && pwd)"   # cd "$REPO_ROOT" の前に絶対パス化しておく
 
 # ---- 条件マトリクス ---------------------------------------------------------
 # コマンド（uv run python -m の後ろ、プロンプトの前の部分）
@@ -52,7 +49,8 @@ PROMPTS=(
 # -----------------------------------------------------------------------------
 
 LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/benchmark_logs/$(date +%Y%m%d-%H%M%S)}"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" || exit 1
+LOG_DIR="$(cd "$LOG_DIR" && pwd)"   # cd "$REPO_ROOT" の前に絶対パス化しておく
 
 # [tool return] の表示を何文字まで残すか（app/agent.py の既定は 120）。ログでツール結果全体を確認できるようにする。
 export AIE_TRACE_LIMIT="${AIE_TRACE_LIMIT:-100000}"
@@ -128,6 +126,7 @@ $TABLE
 "
 
 echo "$OUTPUT"
-printf '%s' "$OUTPUT" > "$OUT_DIR/benchmark_agent.md"
-printf '## Q1: %s\n\n%s\n' "${PROMPTS[0]}" "$Q1_TABLE" > "$OUT_DIR/q1.md"
-echo "saved: $OUT_DIR/benchmark_agent.md, $OUT_DIR/q1.md" >&2
+printf '%s' "$OUTPUT" > "$LOG_DIR/benchmark_agent.md"
+printf '## Q1: %s\n\n%s\n' "${PROMPTS[0]}" "$Q1_TABLE" > "$LOG_DIR/q1.md"
+python3 "$SCRIPT_DIR/make_reports.py" "$LOG_DIR" "${PROMPTS[@]}" >&2 || echo "make_reports.py に失敗しました" >&2
+echo "saved: $LOG_DIR/{benchmark_agent,q1,traces,hit_and_left,differences}.md" >&2

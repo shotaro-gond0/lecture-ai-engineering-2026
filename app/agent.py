@@ -21,6 +21,7 @@
 import argparse
 import inspect
 import json
+import os
 from pathlib import Path
 from contextlib import nullcontext
 from time import perf_counter
@@ -221,7 +222,9 @@ def print_trace(result, elapsed_seconds: float | None = None) -> None:
                         if not data["children"]:
                             print(f"    （末端ページ・本文{len(node.get('content', ''))}文字を取得）")
                 else:
-                    print(f"[tool return] {part.tool_name} -> {str(part.content)[:120]}…")
+                    text = str(part.content)
+                    limit = int(os.environ.get("AIE_TRACE_LIMIT", "120"))  # 切り詰め文字数。全文を見たいときは大きくする
+                    print(f"[tool return] {part.tool_name} -> {text[:limit]}{'…' if len(text) > limit else ''}")
     usage = result.usage
     if elapsed_seconds is not None:
         print(f"[time] 回答完了まで {elapsed_seconds:.2f} 秒（検索・埋め込みを含む）")

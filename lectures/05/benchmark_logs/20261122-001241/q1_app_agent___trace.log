@@ -1,0 +1,31 @@
+[model] gemini-3.5-flash-lite
+第2回の講義資料および用語集によると、LoRAとQLoRAの内容はそれぞれ以下の通りです。
+
+### 1. LoRAは何を固定し、何を学ぶか？
+* **固定するもの：**
+  * 事前学習済みのベースモデルの元の重み（本体）は**固定**し、学習は行いません（用語集（第2回）、第2回・PDF p.52）。
+* **学ぶもの：**
+  * 重みの変化分（差分）を表現する、細長い2つの小さな行列（低ランク行列：行列 $A$ と行列 $B$）の積の部分だけを**学習**します（用語集（第2回）、第2回・PDF p.51, 52）。
+
+### 2. QLoRAは何を加えるか？
+* **加える（組み合わせる）もの：**
+  * LoRAの手法に加えて、ベースモデルの元の重みを **4bit（4ビット）に量子化（圧縮）** してメモリを節約する要素を加えたものが **QLoRA** です（用語集（第2回）、第2回・PDF p.51, 52）。
+  * これにより、元の重みを4bitで粗く保存してメモリ使用量を約1/4にし、より大きなモデルを小さなGPU1台でも調整できるようにします（第2回・PDF p.52）。
+
+---
+**出所：**
+* 用語集（第2回）「LoRA」「QLoRA」
+* 第2回・PDF p.51, 52
+
+--- trace ---
+[tool call]   search_glossary({'query': 'LoRA'})
+[tool call]   search_glossary({'query': 'QLoRA'})
+[tool call]   search_materials({'query': 'LoRA QLoRA 固定'})
+[tool return] search_glossary -> [{"term": "LoRA", "lecture": 2, "definition": "事前学習済みの重みは固定したまま、重みの更新分を2つの小さな行列の積（低ランク行列）で表し、その小さな行列だけを学習するPEFT手法。学習するパラ…
+[tool return] search_glossary -> [{"term": "QLoRA", "lecture": 2, "definition": "ベースモデルの重みを4ビットなどに量子化してメモリを節約したうえで、LoRAで学習する手法。より大きなモデルを小さなGPUで扱える。本講座の第2…
+[tool return] search_materials -> {"results": [{"page_id": "lec02-main-p052", "document_id": "lec02-main", "lecture": 2, "document_title": "基盤モデルの仕組み", "s…
+[time] 回答完了まで 2.74 秒（検索・埋め込みを含む）
+[usage] 入力 4,729 tokens / 出力 407 tokens / モデル応答 2 回
+[cost] 生成APIの推定コスト: $0.002436 USD（埋め込み・索引構築分は含まない）
+
+終了します。

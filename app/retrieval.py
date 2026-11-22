@@ -20,6 +20,7 @@ from app.config import (
     RAG_GRAPH, GRAPH_START_K, GRAPH_HOPS, GRAPH_MAX_RESULTS,
 )
 
+from functools import cache
 
 def get_all_materials() -> str:
     """全資料を、講義・章・ページの情報付きで1つの文字列にまとめる。"""
@@ -185,7 +186,6 @@ def search_graph(query: str) -> dict:
             "max_hops": GRAPH_HOPS}
 
 
-
 def run_full_context(agent, question: str, model, instructions: str, prompt_template: str):
     """全資料を一括投入し、検索ツールを使わずに回答する。"""
     prompt = prompt_template.format(materials=get_all_materials(), question=question)
@@ -196,6 +196,53 @@ def run_full_context(agent, question: str, model, instructions: str, prompt_temp
     except ModelHTTPError as e:
         print(f"[full-context] APIエラー HTTP {e.status_code}: {e.body}")
         raise SystemExit(1)
+
+
+@cache
+def _page_order() -> tuple[list[dict], dict[str, int]]:
+    """文書順のページ一覧と、page_id → 位置の対応表（lectures.json は変わらないので1回だけ作る）。"""
+    pages = load_pages(RAG_SOURCE)
+    return pages, {page["page_id"]: i for i, page in enumerate(pages)}
+
+
+def expand_with_neighbors(hits: list[dict], window: int = 1,
+                          same_section: bool = False, max_results: int | None = None) -> list[dict]:
+    """検索ヒットの前後 window ページを、隣接ページとして追加する。検索方式は問わない。"""
+    pages, position = _page_order()
+    hit_ids = [h["page_id"] for h in hits if h["page_id"] in position]
+    expanded: dict[str, dict] = {}
+
+    # 1) ヒット自身を先に入れる（順位を保つ。ヒットは隣接扱いより常に優先）
+    for hit in hits:
+        if hit["page_id"] in position:
+            expanded[hit["page_id"]] = {**hit, "role": "hit"}
+
+    # 2) 前後ページを追加（すでにあるページは上書きしない＝重複と、ヒットの降格を防ぐ）
+    for hit_id in hit_ids:
+        center = pages[position[hit_id]]
+        for offset in range(-window, window + 1):
+            i = position[hit_id] + offset
+            if offset == 0 or not 0 <= i < len(pages):
+                continue
+            neighbor = pages[i]
+            if neighbor["document_id"] != center["document_id"]:
+                continue  # 別の講義にはまたがない
+            if same_section and neighbor["section"] != center["section"]:
+                continue
+            expanded.setdefault(neighbor["page_id"], {
+                **neighbor, "role": "neighbor", "neighbor_of": hit_id, "distance": None,
+            })
+
+    # 3) 文書順に並べ直す（連続ページとして読める）。件数を絞るときはヒットを先に残す
+    results = sorted(expanded.values(), key=lambda p: position[p["page_id"]])
+    if max_results is not None and len(results) > max_results:
+        keep = {p["page_id"] for p in sorted(results, key=lambda p: p["role"] != "hit")[:max_results]}
+        results = [p for p in results if p["page_id"] in keep]
+    return results
+
+
+def search_with_context(query: str, window: int = 1) -> list[dict]:
+    return expand_with_neighbors(search(query), window=window)
 
 
 if __name__ == "__main__":
